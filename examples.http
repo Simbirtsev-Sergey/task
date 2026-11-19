@@ -1,0 +1,63 @@
+@api = http://localhost:8080/api
+
+### Зарегистрировать инструмент
+POST {{api}}/instruments
+Content-Type: application/json
+
+{"seccode":"DEMO","type":"STOCK","lot_size":10,"min_step":0.05,"currency":"RUB"}
+
+### Создать счёт продавца
+POST {{api}}/accounts
+Content-Type: application/json
+
+{"user_id":"seller","currency":"RUB","balance":0,"positions":{"DEMO":30}}
+
+> {% client.global.set("sellerAccount", response.body.id); %}
+
+### Создать счёт покупателя
+POST {{api}}/accounts
+Content-Type: application/json
+
+{"user_id":"buyer","currency":"RUB","balance":2100}
+
+> {% client.global.set("buyerAccount", response.body.id); %}
+
+### Предложить 30 акций
+POST {{api}}/orders
+Content-Type: application/json
+X-User-Id: seller
+
+{"account_id":{{sellerAccount}},"seccode":"DEMO","type":"SELL","quantity":30,"price":100}
+
+> {% client.global.set("offer", response.body.id); %}
+
+### Купить 20 акций
+POST {{api}}/orders
+Content-Type: application/json
+X-User-Id: buyer
+
+{"account_id":{{buyerAccount}},"seccode":"DEMO","type":"BUY","quantity":20,"price":101}
+
+### Увидеть оставшиеся 10 акций по 100
+GET {{api}}/quotes/DEMO
+
+### Посмотреть сделку
+GET {{api}}/trades?seccode=DEMO
+
+### Проверить баланс покупателя
+GET {{api}}/accounts/{{buyerAccount}}
+X-User-Id: buyer
+
+### Найти частично исполненную заявку
+GET {{api}}/orders?status=PARTIALLY_FILLED&seccode=DEMO
+
+### Изменить цену оставшихся 10 акций
+PUT {{api}}/orders/{{offer}}
+Content-Type: application/json
+X-User-Id: seller
+
+{"price":102,"quantity":30}
+
+### Снять остаток
+DELETE {{api}}/orders/{{offer}}
+X-User-Id: seller
